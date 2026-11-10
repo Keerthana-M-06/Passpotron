@@ -1,25 +1,21 @@
 
-def predict_final_result(minifasnet_result, ear_passed, challenge_status):
-    """
-    Combines MiniFASNet, EAR and random challenge results.
+def predict_final_result(
+    minifasnet_result,
+    ear_passed,
+    challenge_status
+):
 
-    Returns:
-        LIVE CANDIDATE
-        SPOOF SUSPECTED
-        INCONCLUSIVE
-    """
-
-    # MiniFASNet has detected a possible spoof.
+    # A confirmed MiniFASNet spoof suspicion takes priority.
     if minifasnet_result == "SPOOF SUSPECTED":
         return "SPOOF SUSPECTED"
 
-    # Both additional liveness checks must pass.
+    # All three checks must pass.
     if (
-        minifasnet_result in ["LIVE CANDIDATE", "INCONCLUSIVE"]
+        minifasnet_result == "LIVE CANDIDATE"
         and ear_passed is True
         and challenge_status == "PASSED"
     ):
         return "LIVE CANDIDATE"
 
-    # Missing, failed or uncertain checks.
+    # Any missing, failed or inconclusive check.
     return "INCONCLUSIVE"
