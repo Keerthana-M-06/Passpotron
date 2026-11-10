@@ -24,7 +24,9 @@ REPO_DIR = os.path.join(
     "Silent-Face-Anti-Spoofing"
 )
 
+# Add all required project directories to Python's import path.
 sys.path.insert(0, PROJECT_DIR)
+sys.path.insert(0, CURRENT_DIR)
 sys.path.insert(0, REPO_DIR)
 
 os.chdir(REPO_DIR)
@@ -330,6 +332,8 @@ def reset_attempt():
 # =========================================================
 
 def start_combined_webcam():
+        # Set the correct working directory for MiniFASNet
+    os.chdir(REPO_DIR)
 
     print("\nInitializing MiniFASNet...", flush=True)
 
@@ -350,9 +354,11 @@ def start_combined_webcam():
 
     if not cap.isOpened():
 
-        print("ERROR: Could not open webcam.")
+        print("ERROR: Could not open webcam.", flush=True)
 
-        return
+        cap.release()
+
+        return "INCONCLUSIVE"
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -367,6 +373,9 @@ def start_combined_webcam():
 
     previous_frame = None
     identical_frame_count = 0
+
+    # Default result if verification does not complete.
+    returned_result = "INCONCLUSIVE"
 
     try:
 
@@ -429,7 +438,6 @@ def start_combined_webcam():
 
                 state = reset_attempt()
 
-                # Keep total blink count for display.
                 state["current_ear"] = 0.0
 
             # =================================================
@@ -621,8 +629,6 @@ def start_combined_webcam():
 
                 if state["challenge_started"]:
 
-                    # If landmarks fail, do not allow a
-                    # blink or eye-closure challenge to pass.
                     if landmarks_valid:
 
                         state["challenge_status"] = (
@@ -1019,6 +1025,8 @@ def start_combined_webcam():
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
 
+                print("Q pressed. Closing webcam...", flush=True)
+
                 break
 
     finally:
@@ -1041,6 +1049,29 @@ def start_combined_webcam():
             flush=True
         )
 
+        # Return only a recognized final result.
+        # If verification is unfinished, return INCONCLUSIVE.
+
+        if state["final_result"] in [
+            "LIVE CANDIDATE",
+            "SPOOF SUSPECTED",
+            "INCONCLUSIVE"
+        ]:
+
+            returned_result = state["final_result"]
+
+        else:
+
+            returned_result = "INCONCLUSIVE"
+
+    print(
+        "Result returned to Streamlit:",
+        returned_result,
+        flush=True
+    )
+
+    return returned_result
+
 
 # =========================================================
 # 10. RUN APPLICATION
@@ -1048,4 +1079,6 @@ def start_combined_webcam():
 
 if __name__ == "__main__":
 
-    start_combined_webcam()
+    result = start_combined_webcam()
+
+    print("\nFinal result:", result, flush=True)
